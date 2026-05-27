@@ -1,0 +1,17 @@
+[project]
+name = "dispersal-firewall-kit"
+version = "0.1.0"
+description = "Readable firewall policy profiles"
+requires-python = ">=3.11"
+license = "MIT"
+
+[project.scripts]
+firewall-kit = "firewall_kit:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["firewall_kit"]
+package-dir = {"" = "src"}
