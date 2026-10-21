@@ -45,6 +45,8 @@ def render_nftables(profile_name: str, ports: list[tuple[str, int]]) -> str:
         "#!/usr/sbin/nft -f",
         f"# Dispersal Wolves Firewall Kit · {profile_name}",
         "# Review before loading. This ruleset replaces only the dw_filter table.",
+        "table inet dw_filter",
+        "delete table inet dw_filter",
         "table inet dw_filter {",
         "  chain input {",
         "    type filter hook input priority 0; policy drop;",

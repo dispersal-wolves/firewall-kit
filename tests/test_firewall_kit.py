@@ -15,6 +15,14 @@ class FirewallKitTests(unittest.TestCase):
         self.assertIn("tcp dport 443", render_nftables("web-server", ports))
         self.assertIn("ufw default deny incoming", render_ufw("web-server", ports))
 
+    def test_nftables_replaces_existing_table(self):
+        lines = render_nftables("server", ports_for(PROFILES["server"], [])).splitlines()
+        create = lines.index("table inet dw_filter")
+        delete = lines.index("delete table inet dw_filter")
+        define = lines.index("table inet dw_filter {")
+        self.assertLess(create, delete)
+        self.assertLess(delete, define)
+
 
 if __name__ == "__main__":
     unittest.main()
