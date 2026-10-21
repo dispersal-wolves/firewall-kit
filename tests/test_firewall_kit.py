@@ -23,6 +23,12 @@ class FirewallKitTests(unittest.TestCase):
         self.assertLess(create, delete)
         self.assertLess(delete, define)
 
+    def test_container_host_leaves_forwarding_to_runtime(self):
+        host = PROFILES["container-host"]
+        rendered = render_nftables("container-host", ports_for(host, []), host.filter_forward)
+        self.assertNotIn("chain forward", rendered)
+        self.assertIn("chain forward", render_nftables("server", ports_for(PROFILES["server"], [])))
+
 
 if __name__ == "__main__":
     unittest.main()

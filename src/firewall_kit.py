@@ -13,13 +13,15 @@ from dataclasses import dataclass
 class Profile:
     description: str
     inbound: tuple[str, ...]
+    filter_forward: bool = True
 
 
 PROFILES = {
     "workstation": Profile("Default-deny inbound workstation", ()),
     "server": Profile("Remote administration server", ("tcp:22",)),
     "web-server": Profile("Remote administration plus HTTP and HTTPS", ("tcp:22", "tcp:80", "tcp:443")),
-    "container-host": Profile("Container host management plane", ("tcp:22",)),
+    # Forwarded traffic is left to the container runtime's own rules; a drop policy here would cut off containers.
+    "container-host": Profile("Container host management plane", ("tcp:22",), filter_forward=False),
 }
 
 PORT_PATTERN = re.compile(r"^(tcp|udp):(\d{1,5})$")
@@ -40,7 +42,7 @@ def ports_for(profile: Profile, additions: list[str]) -> list[tuple[str, int]]:
     return sorted({parse_port(item) for item in (*profile.inbound, *additions)}, key=lambda item: (item[0], item[1]))
 
 
-def render_nftables(profile_name: str, ports: list[tuple[str, int]]) -> str:
+def render_nftables(profile_name: str, ports: list[tuple[str, int]], filter_forward: bool = True) -> str:
     rules = [
         "#!/usr/sbin/nft -f",
         f"# Dispersal Wolves Firewall Kit · {profile_name}",
@@ -58,7 +60,10 @@ def render_nftables(profile_name: str, ports: list[tuple[str, int]]) -> str:
     ]
     for protocol, port in ports:
         rules.append(f"    {protocol} dport {port} ct state new accept")
-    rules.extend(["  }", "  chain forward { type filter hook forward priority 0; policy drop; }", "  chain output { type filter hook output priority 0; policy accept; }", "}"])
+    rules.append("  }")
+    if filter_forward:
+        rules.append("  chain forward { type filter hook forward priority 0; policy drop; }")
+    rules.extend(["  chain output { type filter hook output priority 0; policy accept; }", "}"])
     return "\n".join(rules) + "\n"
 
 
@@ -92,7 +97,8 @@ def command_render(args: argparse.Namespace) -> int:
     except ValueError as exc:
         print(exc, file=sys.stderr)
         return 2
-    output = render_nftables(args.profile, ports) if args.backend == "nftables" else render_ufw(args.profile, ports)
+    profile = PROFILES[args.profile]
+    output = render_nftables(args.profile, ports, profile.filter_forward) if args.backend == "nftables" else render_ufw(args.profile, ports)
     if args.output:
         args.output.write_text(output, encoding="utf-8", newline="\n")
         print(f"Wrote reviewable policy to {args.output}")
