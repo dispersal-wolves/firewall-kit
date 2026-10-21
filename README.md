@@ -16,12 +16,12 @@ python src/firewall_kit.py render workstation --backend nftables
 
 For a global `firewall-kit` command, run `python -m pip install .`.
 
-Run the command with `--help` for every option. The tool works locally, collects no telemetry, and supports machine-readable output where applicable.
+Run the command with `--help` for every option. The tool works locally, collects no telemetry, and `list --format json` gives machine-readable profile data.
 
 ## Principles
 
-- **Local first.** Host data stays on the host unless you explicitly configure a webhook.
-- **Safe by default.** Inspection is read-only and mutation requires a deliberate command.
+- **Local first.** The tool makes no network connections and reads no host state.
+- **Safe by default.** It only prints or writes policy files; loading them is a deliberate step you take with the operating-system firewall.
 - **Small contract.** The tool solves one defensive job and reports its limits plainly.
 - **Scriptable.** Stable exit codes and structured output make automation practical.
 
